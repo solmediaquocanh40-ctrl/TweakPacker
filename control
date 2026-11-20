@@ -1,0 +1,8 @@
+Package: com.anhdang.tweakpacker
+Name: TweakPacker
+Version: 1.0.0
+Architecture: iphoneos-arm
+Description: Xuất bản backup .deb cho từng tweak đã cài: chọn riêng từng tweak, gom trọn bộ dylib, bundle, plist và mọi file liên quan thành file .deb cài lại được, chia sẻ ngay trong app. Export a full, reinstallable .deb backup of any installed tweak — pick tweaks one by one.
+Maintainer: Quoc
+Author: Quoc
+Section: Applications

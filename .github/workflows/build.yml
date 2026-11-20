@@ -24,7 +24,7 @@ jobs:
           make package FINALPACKAGE=1
       - uses: actions/upload-artifact@v4
         with:
-          name: TweakPacker-1.0.0-rootful
+          name: TweakPacker-1.1.0-rootful
           path: packages/*.deb
 
   rootless:
@@ -46,7 +46,7 @@ jobs:
           make package FINALPACKAGE=1 THEOS_PACKAGE_SCHEME=rootless
       - uses: actions/upload-artifact@v4
         with:
-          name: TweakPacker-1.0.0-rootless
+          name: TweakPacker-1.1.0-rootless
           path: packages/*.deb
 
   roothide:
@@ -68,5 +68,5 @@ jobs:
           make package FINALPACKAGE=1 THEOS_PACKAGE_SCHEME=roothide
       - uses: actions/upload-artifact@v4
         with:
-          name: TweakPacker-1.0.0-roothide
+          name: TweakPacker-1.1.0-roothide
           path: packages/*.deb

@@ -7,6 +7,8 @@
 @property (nonatomic, copy) NSString *version;
 @property (nonatomic, copy) NSString *architecture;
 @property (nonatomic, copy) NSString *section;
+@property (nonatomic, copy) NSString *author;
+@property (nonatomic, copy) NSString *dependsRaw;
 @property (nonatomic, copy) NSString *shortDescription;
 // Nguyên văn stanza trong dpkg status, đã bỏ trường Status và Conffiles — dùng làm file control khi đóng lại .deb.
 @property (nonatomic, copy) NSString *controlText;
@@ -30,5 +32,12 @@
 + (NSString *)realPathForListedPath:(NSString *)listedPath;
 // Đường dẫn ghi vào trong .deb (bỏ "/" đầu và tiền tố var/jb nếu có).
 + (NSString *)debPathForListedPath:(NSString *)listedPath;
+// Thư mục chứa file thông số (prefs) của các tweak.
++ (NSString *)preferencesDirectory;
++ (NSString *)prefsFilePathForDomain:(NSString *)domain;
+// Các domain prefs có thể có của gói: package ID + mọi giá trị "defaults" đọc được trong Root.plist của PreferenceBundle thuộc gói.
++ (NSArray<NSString *> *)prefsDomainsForPackage:(TPPackage *)package;
+// Đường dẫn file icon của gói (PreferenceLoader / bundle / app), nil nếu không có. Có cache theo package ID.
++ (NSString *)iconPathForPackage:(TPPackage *)package;
 
 @end

@@ -13,4 +13,11 @@
                          skipped:(NSUInteger *)outSkipped
                            error:(NSError **)error;
 
+// Như trên nhưng ghi file .deb vào thư mục chỉ định (dùng cho các đợt backup theo phiên).
++ (NSString *)buildDebForPackage:(TPPackage *)package
+                     toDirectory:(NSString *)directory
+                       fileCount:(NSUInteger *)outFileCount
+                         skipped:(NSUInteger *)outSkipped
+                           error:(NSError **)error;
+
 @end

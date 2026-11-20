@@ -8,6 +8,7 @@
 @interface TPDpkg ()
 + (NSString *)absolutePath:(NSString *)suffix;
 + (TPPackage *)packageFromStanza:(NSString *)stanza;
++ (NSString *)findIconPathForPackage:(TPPackage *)package;
 @end
 
 @implementation TPDpkg
@@ -115,6 +116,10 @@
     pkg.version = fields[@"Version"] ?: @"";
     pkg.architecture = fields[@"Architecture"] ?: @"iphoneos-arm";
     pkg.section = fields[@"Section"] ?: @"";
+    NSString *author = fields[@"Author"];
+    if (author.length == 0) author = fields[@"Maintainer"];
+    pkg.author = author ?: @"";
+    pkg.dependsRaw = fields[@"Depends"] ?: @"";
     NSString *desc = fields[@"Description"] ?: @"";
     pkg.shortDescription = [[desc componentsSeparatedByString:@"\n"] firstObject] ?: @"";
     pkg.controlText = [[controlLines componentsJoinedByString:@"\n"] stringByAppendingString:@"\n"];
@@ -155,6 +160,102 @@
     pkg.totalSize = size;
     pkg.fileCount = files;
     return pkg;
+}
+
+#pragma mark - Prefs
+
++ (NSString *)preferencesDirectory {
+    return @"/var/mobile/Library/Preferences";
+}
+
++ (NSString *)prefsFilePathForDomain:(NSString *)domain {
+    return [[self preferencesDirectory] stringByAppendingPathComponent:[domain stringByAppendingString:@".plist"]];
+}
+
++ (NSArray<NSString *> *)prefsDomainsForPackage:(TPPackage *)package {
+    NSMutableArray<NSString *> *domains = [NSMutableArray array];
+    NSMutableSet<NSString *> *seen = [NSMutableSet set];
+    if (package.packageID.length > 0) {
+        [seen addObject:package.packageID];
+        [domains addObject:package.packageID];
+    }
+    for (NSString *listed in package.listedPaths) {
+        NSString *lower = listed.lowercaseString;
+        if (![lower containsString:@"preferencebundles/"] || ![lower hasSuffix:@"root.plist"]) continue;
+        NSString *real = [self realPathForListedPath:listed];
+        if (!real) continue;
+        NSDictionary *root = [NSDictionary dictionaryWithContentsOfFile:real];
+        NSArray *items = root[@"items"];
+        if (![items isKindOfClass:[NSArray class]]) continue;
+        for (id item in items) {
+            if (![item isKindOfClass:[NSDictionary class]]) continue;
+            NSString *def = item[@"defaults"];
+            if ([def isKindOfClass:[NSString class]] && def.length > 0 && ![seen containsObject:def]) {
+                [seen addObject:def];
+                [domains addObject:def];
+            }
+        }
+    }
+    return [domains copy];
+}
+
+#pragma mark - Icon
+
++ (NSString *)iconPathForPackage:(TPPackage *)package {
+    static NSMutableDictionary<NSString *, id> *cache = nil;
+    static dispatch_once_t onceToken;
+    dispatch_once(&onceToken, ^{
+        cache = [NSMutableDictionary dictionary];
+    });
+    id cached = cache[package.packageID];
+    if (cached != nil) {
+        return [cached isKindOfClass:[NSString class]] ? cached : nil;
+    }
+    NSString *found = [self findIconPathForPackage:package];
+    cache[package.packageID] = found ?: [NSNull null];
+    return found;
+}
+
++ (NSString *)findIconPathForPackage:(TPPackage *)package {
+    // 1) Icon khai trong mục PreferenceLoader.
+    for (NSString *listed in package.listedPaths) {
+        NSString *lower = listed.lowercaseString;
+        if (![lower containsString:@"preferenceloader/preferences/"] || ![lower hasSuffix:@".plist"]) continue;
+        NSString *real = [self realPathForListedPath:listed];
+        if (!real) continue;
+        NSDictionary *entryPlist = [NSDictionary dictionaryWithContentsOfFile:real];
+        NSDictionary *entry = entryPlist[@"entry"];
+        if (![entry isKindOfClass:[NSDictionary class]]) continue;
+        NSString *icon = entry[@"icon"];
+        if (![icon isKindOfClass:[NSString class]] || icon.length == 0) continue;
+        if ([icon hasPrefix:@"/"]) {
+            NSString *p = [self realPathForListedPath:icon];
+            if (p) return p;
+        }
+        NSString *base = [icon stringByDeletingPathExtension];
+        for (NSString *candidate in @[icon,
+                                      [icon stringByAppendingString:@".png"],
+                                      [base stringByAppendingString:@"@2x.png"],
+                                      [base stringByAppendingString:@"@3x.png"]]) {
+            NSString *p = [self realPathForListedPath:[@"/Library/PreferenceLoader/Icons/" stringByAppendingString:candidate]];
+            if (p) return p;
+        }
+    }
+    // 2) icon.png trong .bundle, rồi AppIcon trong .app.
+    NSString *appIconPath = nil;
+    for (NSString *listed in package.listedPaths) {
+        NSString *lower = listed.lowercaseString;
+        NSString *last = lower.lastPathComponent;
+        if ([lower containsString:@".bundle/"] &&
+            ([last isEqualToString:@"icon.png"] || [last isEqualToString:@"icon@2x.png"] || [last isEqualToString:@"icon@3x.png"])) {
+            NSString *p = [self realPathForListedPath:listed];
+            if (p) return p;
+        }
+        if (appIconPath == nil && [lower containsString:@".app/"] && [last hasPrefix:@"appicon60x60"]) {
+            appIconPath = [self realPathForListedPath:listed];
+        }
+    }
+    return appIconPath;
 }
 
 @end

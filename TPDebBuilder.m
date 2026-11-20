@@ -207,6 +207,10 @@ static void TPArAppendMember(NSMutableData *archive, NSString *name, NSData *con
 }
 
 + (NSString *)buildDebForPackage:(TPPackage *)package fileCount:(NSUInteger *)outFileCount skipped:(NSUInteger *)outSkipped error:(NSError **)error {
+    return [self buildDebForPackage:package toDirectory:[self outputDirectory] fileCount:outFileCount skipped:outSkipped error:error];
+}
+
++ (NSString *)buildDebForPackage:(TPPackage *)package toDirectory:(NSString *)directory fileCount:(NSUInteger *)outFileCount skipped:(NSUInteger *)outSkipped error:(NSError **)error {
     NSUInteger packed = 0;
     NSUInteger skipped = 0;
 
@@ -323,7 +327,8 @@ static void TPArAppendMember(NSMutableData *archive, NSString *name, NSData *con
         }
     }
     NSString *fileName = [NSString stringWithFormat:@"%@_%@.deb", package.packageID, safeVersion];
-    NSString *outPath = [[self outputDirectory] stringByAppendingPathComponent:fileName];
+    [[NSFileManager defaultManager] createDirectoryAtPath:directory withIntermediateDirectories:YES attributes:nil error:nil];
+    NSString *outPath = [directory stringByAppendingPathComponent:fileName];
     if (![deb writeToFile:outPath atomically:YES]) {
         if (error) {
             *error = [NSError errorWithDomain:@"TweakPacker" code:4 userInfo:@{ NSLocalizedDescriptionKey: @"Ghi file .deb thất bại" }];

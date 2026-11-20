@@ -1,13 +1,26 @@
 #import "TPAppDelegate.h"
 #import "TPPackageListViewController.h"
+#import "TPBackupListViewController.h"
+#import "TPHistoryViewController.h"
 
 @implementation TPAppDelegate
 
 - (BOOL)application:(UIApplication *)application didFinishLaunchingWithOptions:(NSDictionary *)launchOptions {
     self.window = [[UIWindow alloc] initWithFrame:[[UIScreen mainScreen] bounds]];
-    TPPackageListViewController *root = [[TPPackageListViewController alloc] init];
-    UINavigationController *nav = [[UINavigationController alloc] initWithRootViewController:root];
-    self.window.rootViewController = nav;
+
+    TPPackageListViewController *packages = [[TPPackageListViewController alloc] init];
+    packages.tabBarItem = [[UITabBarItem alloc] initWithTitle:@"Đã cài" image:[UIImage systemImageNamed:@"list.bullet"] tag:0];
+    UINavigationController *navPackages = [[UINavigationController alloc] initWithRootViewController:packages];
+
+    TPBackupListViewController *backups = [[TPBackupListViewController alloc] init];
+    UINavigationController *navBackups = [[UINavigationController alloc] initWithRootViewController:backups];
+
+    TPHistoryViewController *history = [[TPHistoryViewController alloc] init];
+    UINavigationController *navHistory = [[UINavigationController alloc] initWithRootViewController:history];
+
+    UITabBarController *tabs = [[UITabBarController alloc] init];
+    tabs.viewControllers = @[navPackages, navBackups, navHistory];
+    self.window.rootViewController = tabs;
     [self.window makeKeyAndVisible];
     return YES;
 }

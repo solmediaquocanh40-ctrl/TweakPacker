@@ -90,7 +90,7 @@
     } else {
         if (indexPath.row == 0) {
             cell.textLabel.text = @"Phiên bản TweakPacker";
-            cell.detailTextLabel.text = @"1.1.1";
+            cell.detailTextLabel.text = @"1.2.0";
             cell.selectionStyle = UITableViewCellSelectionStyleNone;
         } else {
             cell.textLabel.text = @"Chia sẻ log gỡ lỗi";

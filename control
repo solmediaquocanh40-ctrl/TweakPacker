@@ -1,8 +1,8 @@
 Package: com.anhdang.tweakpacker
 Name: TweakPacker
-Version: 1.1.1
+Version: 1.2.0
 Architecture: iphoneos-arm
-Description: Backup và khôi phục tweak đã cài: đóng trọn bộ .deb kèm thông số (prefs), tự kiểm tra đủ file, restore ngay trên máy hoặc qua Sileo, quản lý kho backup theo từng đợt. Backup & restore installed tweaks — full .deb plus their settings, with restore built in.
+Description: Backup và khôi phục tweak đã cài: đóng trọn bộ .deb kèm thông số (prefs), tự kiểm tra đủ file, restore ngay trên máy hoặc qua Sileo, quản lý kho backup theo từng đợt, kèm bản đồ App ↔ Tweak xem app nào đang bị tweak nào chích. Backup & restore installed tweaks — full .deb plus their settings, with restore built in.
 Maintainer: Quoc
 Author: Quoc
 Section: Applications

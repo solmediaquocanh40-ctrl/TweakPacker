@@ -1,8 +1,12 @@
-# TweakPacker 1.1.1
+# TweakPacker 1.2.0
 
 **Backup và khôi phục tweak đã cài — đóng trọn bộ .deb kèm luôn thông số, restore ngay trên máy.**
 
 Chào mọi người, mình là Quoc. TweakPacker là app mình viết cho chính mình trước, vì mình vọc tweak gần như mỗi ngày và gặp đi gặp lại mấy chuyện rất khó chịu: cài thử một tweak, chỉnh thông số tới lui cả buổi mới ưng, hôm sau gỡ ra thử cái khác, tới lúc muốn quay lại thì phải cài lại từ đầu rồi chỉnh lại từ đầu. Có tweak thì repo đóng cửa mất tiêu, file .deb ngày xưa không còn chỗ nào tải lại nữa. IAmLazy trên thị trường cũng làm được chuyện đóng gói lại, nhưng mình muốn một bản của riêng mình: chọn được từng tweak, backup luôn cả thông số đã chỉnh, và quan trọng nhất là khôi phục lại được ngay trong app chứ không phải lọ mọ chép file bằng Filza. Thế là có TweakPacker.
+
+## Có gì mới ở 1.2.0
+
+- **Tab mới "App & Tweak" — bản đồ chích của cả máy:** xem được từng app đang bị tweak nào chích vào. Ví dụ mở ra là thấy ngay YouTube → uYou, Messenger → các tweak của nó, SpringBoard → cả dàn tweak hệ thống. Có 2 cách xem: theo app (mỗi app có tweak gì) và theo tweak (mỗi tweak chích vào đâu), tìm kiếm được, bấm vào từng tweak thấy tên gói, phiên bản, đang bật hay đã tắt và chích vào những đâu. Tweak nào chích vào mọi app thì gom riêng mục "Toàn hệ thống" cho khỏi rối; tweak nào lọc theo class không gắn được vào app cụ thể cũng có mục riêng ghi rõ. Kể cả dạng app tải ngoài đã nhúng sẵn dylib trong file cài (kiểu bản .ipa đã chích sẵn) app cũng quét ra và ghi rõ "nhúng sẵn trong app" để phân biệt với chích bằng jailbreak. Ý này do chính mình nghĩ ra khi vọc máy: cài nhiều tweak quá, tới lúc app nào lỗi chẳng biết thủ phạm nào đang chích vào nó — giờ mở một chỗ là thấy hết.
 
 ## Có gì mới ở 1.1.1
 
@@ -27,6 +31,7 @@ Bản này là bản vá lỗi theo đúng những gì mình gặp khi dùng 1.1
 - **So sánh 2 bản backup:** cùng một tweak backup 2 lần ở 2 thời điểm, app chỉ ra file nào thêm, file nào mất, file nào đổi kích thước, phiên bản nào với nào.
 - **Xuất báo cáo tổng hợp:** một file text liệt kê toàn bộ gói đã cài kèm phiên bản và tác giả, gửi cho ai cần xem máy bạn đang có gì cũng tiện.
 - **Nhật ký trong app:** mọi lần backup, restore, xoá thành công hay thất bại đều ghi lại trong tab Nhật ký, kèm nút chia sẻ file log gỡ lỗi khi cần nhờ người khác xem giúp.
+- **Bản đồ App & Tweak:** tab riêng liệt kê mỗi app đang bị tweak nào chích vào (đọc từ chính khai báo của từng tweak, đối chiếu dpkg ra tên gói và phiên bản), gồm cả SpringBoard, nhóm tweak toàn hệ thống, và cả dylib nhúng sẵn trong các app tải ngoài.
 
 ## Vài lưu ý thật lòng
 

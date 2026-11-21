@@ -98,10 +98,11 @@ static TPTarListing *TPParseTar(NSData *tarData) {
         NSUInteger paddedSize = (NSUInteger)((size + 511) / 512) * 512;
 
         if (type == 'L') {
-            // GNU longlink: dữ liệu là tên đầy đủ của mục ngay sau.
+            // GNU longlink: dữ liệu là tên đầy đủ của mục ngay sau, kết thúc bằng ký tự NUL.
             if (dataOffset + size <= total) {
-                pendingLongName = [[NSString alloc] initWithBytes:bytes + dataOffset length:(NSUInteger)size encoding:NSUTF8StringEncoding];
-                pendingLongName = [pendingLongName stringByTrimmingCharactersInSet:[NSCharacterSet characterSetWithCharactersInString:@"\0"]];
+                NSUInteger effective = 0;
+                while (effective < size && bytes[dataOffset + effective] != 0) effective++;
+                pendingLongName = [[NSString alloc] initWithBytes:bytes + dataOffset length:effective encoding:NSUTF8StringEncoding];
             }
         } else if (type == 'x' || type == 'g') {
             // Header mở rộng pax — bỏ qua, không chứa file thật.

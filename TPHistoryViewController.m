@@ -1,5 +1,6 @@
 #import "TPHistoryViewController.h"
 #import "TPBackupManager.h"
+#import "TPTheme.h"
 #import "TPFormat.h"
 #import "TPLog.h"
 
@@ -28,19 +29,16 @@
 
 - (void)viewWillAppear:(BOOL)animated {
     [super viewWillAppear:animated];
+    [TPTheme applyToTableView:self.tableView];
     [self reload];
 }
 
 - (void)reload {
     self.entries = [TPBackupManager historyEntries];
     if (self.entries.count == 0) {
-        UILabel *label = [[UILabel alloc] init];
-        label.text = @"Chưa có hoạt động nào được ghi lại.";
-        label.textAlignment = NSTextAlignmentCenter;
-        label.textColor = [UIColor secondaryLabelColor];
-        self.tableView.backgroundView = label;
+        [TPTheme setEmptyMessage:@"Chưa có hoạt động nào được ghi lại." forTableView:self.tableView];
     } else {
-        self.tableView.backgroundView = nil;
+        [TPTheme setEmptyMessage:nil forTableView:self.tableView];
     }
     [self.tableView reloadData];
 }

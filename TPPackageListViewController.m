@@ -4,6 +4,7 @@
 #import "TPBackupManager.h"
 #import "TPDetailViewController.h"
 #import "TPProgressHUD.h"
+#import "TPTheme.h"
 #import "TPFormat.h"
 #import "TPLog.h"
 
@@ -16,7 +17,7 @@
 @property (nonatomic, strong) UISegmentedControl *scopeControl;
 @property (nonatomic, strong) UIBarButtonItem *exportItem;
 @property (nonatomic, strong) UIBarButtonItem *selectItem;
-@property (nonatomic, strong) UIBarButtonItem *menuItem;
+@property (nonatomic, strong) UIBarButtonItem *optionsItem;
 @property (nonatomic, strong) UIBarButtonItem *countItem;
 @property (nonatomic, strong) UIBarButtonItem *clearItem;
 @property (nonatomic, strong) NSCache<NSString *, UIImage *> *iconCache;
@@ -33,7 +34,7 @@
 - (void)exportReport;
 - (void)runBackupWithPackages:(NSArray<TPPackage *> *)targets;
 - (void)scopeChanged:(UISegmentedControl *)sender;
-- (UIMenu *)buildMenu;
+- (void)showOptionsSheet;
 - (UIImage *)thumbnailForPackage:(TPPackage *)package;
 - (void)showDetailForPackage:(TPPackage *)package;
 - (void)handleLongPress:(UILongPressGestureRecognizer *)gesture;
@@ -59,9 +60,8 @@
     self.navigationItem.titleView = self.scopeControl;
 
     self.selectItem = [[UIBarButtonItem alloc] initWithTitle:@"Chọn hết" style:UIBarButtonItemStylePlain target:self action:@selector(toggleSelectVisible)];
-    self.menuItem = [[UIBarButtonItem alloc] initWithImage:[UIImage systemImageNamed:@"ellipsis.circle"] style:UIBarButtonItemStylePlain target:nil action:nil];
-    self.menuItem.menu = [self buildMenu];
-    self.navigationItem.leftBarButtonItems = @[self.selectItem, self.menuItem];
+    self.optionsItem = [[UIBarButtonItem alloc] initWithImage:[UIImage systemImageNamed:@"ellipsis.circle"] style:UIBarButtonItemStylePlain target:self action:@selector(showOptionsSheet)];
+    self.navigationItem.leftBarButtonItems = @[self.selectItem, self.optionsItem];
 
     self.exportItem = [[UIBarButtonItem alloc] initWithTitle:@"Backup" style:UIBarButtonItemStyleDone target:self action:@selector(backupSelected)];
     self.navigationItem.rightBarButtonItem = self.exportItem;
@@ -74,13 +74,15 @@
     self.definesPresentationContext = YES;
 
     // Thanh dưới cùng: luôn hiện rõ "Đã chọn: n" để không bao giờ mơ hồ trạng thái chọn.
-    UILabel *countLabel = [[UILabel alloc] init];
+    UILabel *countLabel = [[UILabel alloc] initWithFrame:CGRectMake(0, 0, 150, 30)];
     countLabel.font = [UIFont systemFontOfSize:13];
     countLabel.textColor = [UIColor secondaryLabelColor];
+    countLabel.textAlignment = NSTextAlignmentCenter;
     self.countItem = [[UIBarButtonItem alloc] initWithCustomView:countLabel];
     self.clearItem = [[UIBarButtonItem alloc] initWithTitle:@"Bỏ chọn" style:UIBarButtonItemStylePlain target:self action:@selector(clearSelection)];
-    UIBarButtonItem *flex = [[UIBarButtonItem alloc] initWithBarButtonSystemItem:UIBarButtonSystemItemFlexibleSpace target:nil action:nil];
-    self.toolbarItems = @[flex, self.countItem, flex, self.clearItem];
+    UIBarButtonItem *flex1 = [[UIBarButtonItem alloc] initWithBarButtonSystemItem:UIBarButtonSystemItemFlexibleSpace target:nil action:nil];
+    UIBarButtonItem *flex2 = [[UIBarButtonItem alloc] initWithBarButtonSystemItem:UIBarButtonSystemItemFlexibleSpace target:nil action:nil];
+    self.toolbarItems = @[flex1, self.countItem, flex2, self.clearItem];
 
     UILongPressGestureRecognizer *longPress = [[UILongPressGestureRecognizer alloc] initWithTarget:self action:@selector(handleLongPress:)];
     [self.tableView addGestureRecognizer:longPress];
@@ -101,6 +103,7 @@
 - (void)viewWillAppear:(BOOL)animated {
     [super viewWillAppear:animated];
     self.navigationController.toolbarHidden = NO;
+    [TPTheme applyToTableView:self.tableView];
 }
 
 - (void)viewWillDisappear:(BOOL)animated {
@@ -114,29 +117,29 @@
     [self updateSelectionUI];
 }
 
-#pragma mark - Menu
+#pragma mark - Bảng tuỳ chọn (nút 3 chấm)
 
-- (UIMenu *)buildMenu {
-    UIAction *sortName = [UIAction actionWithTitle:@"Sắp xếp theo tên" image:nil identifier:nil handler:^(__kindof UIAction *action) {
+- (void)showOptionsSheet {
+    UIAlertController *sheet = [UIAlertController alertControllerWithTitle:@"Tuỳ chọn" message:nil preferredStyle:UIAlertControllerStyleActionSheet];
+    NSString *sortNameTitle = self.sortMode == 0 ? @"Sắp xếp theo tên ✓" : @"Sắp xếp theo tên";
+    NSString *sortSizeTitle = self.sortMode == 1 ? @"Sắp xếp theo dung lượng ✓" : @"Sắp xếp theo dung lượng";
+    [sheet addAction:[UIAlertAction actionWithTitle:sortNameTitle style:UIAlertActionStyleDefault handler:^(UIAlertAction *action) {
         self.sortMode = 0;
-        self.menuItem.menu = [self buildMenu];
         [self rebuildVisible];
-    }];
-    sortName.state = self.sortMode == 0 ? UIMenuElementStateOn : UIMenuElementStateOff;
-    UIAction *sortSize = [UIAction actionWithTitle:@"Sắp xếp theo dung lượng" image:nil identifier:nil handler:^(__kindof UIAction *action) {
+    }]];
+    [sheet addAction:[UIAlertAction actionWithTitle:sortSizeTitle style:UIAlertActionStyleDefault handler:^(UIAlertAction *action) {
         self.sortMode = 1;
-        self.menuItem.menu = [self buildMenu];
         [self rebuildVisible];
-    }];
-    sortSize.state = self.sortMode == 1 ? UIMenuElementStateOn : UIMenuElementStateOff;
-    UIMenu *sortMenu = [UIMenu menuWithTitle:@"Sắp xếp" children:@[sortName, sortSize]];
-    UIAction *backupAll = [UIAction actionWithTitle:@"Backup tất cả tweak" image:[UIImage systemImageNamed:@"archivebox"] identifier:nil handler:^(__kindof UIAction *action) {
+    }]];
+    [sheet addAction:[UIAlertAction actionWithTitle:@"Backup tất cả tweak" style:UIAlertActionStyleDefault handler:^(UIAlertAction *action) {
         [self backupAllTweaks];
-    }];
-    UIAction *report = [UIAction actionWithTitle:@"Xuất báo cáo tổng hợp" image:[UIImage systemImageNamed:@"doc.text"] identifier:nil handler:^(__kindof UIAction *action) {
+    }]];
+    [sheet addAction:[UIAlertAction actionWithTitle:@"Xuất báo cáo tổng hợp" style:UIAlertActionStyleDefault handler:^(UIAlertAction *action) {
         [self exportReport];
-    }];
-    return [UIMenu menuWithTitle:@"" children:@[sortMenu, backupAll, report]];
+    }]];
+    [sheet addAction:[UIAlertAction actionWithTitle:@"Huỷ" style:UIAlertActionStyleCancel handler:nil]];
+    sheet.popoverPresentationController.barButtonItem = self.optionsItem;
+    [self presentViewController:sheet animated:YES completion:nil];
 }
 
 #pragma mark - Lọc danh sách
@@ -167,13 +170,9 @@
     self.visiblePackages = [visible copy];
     [self.tableView reloadData];
     if (self.visiblePackages.count == 0) {
-        UILabel *label = [[UILabel alloc] init];
-        label.text = self.allPackages.count == 0 ? @"Đang đọc danh sách gói…" : @"Không có gói nào khớp";
-        label.textAlignment = NSTextAlignmentCenter;
-        label.textColor = [UIColor secondaryLabelColor];
-        self.tableView.backgroundView = label;
+        [TPTheme setEmptyMessage:self.allPackages.count == 0 ? @"Đang đọc danh sách gói…" : @"Không có gói nào khớp" forTableView:self.tableView];
     } else {
-        self.tableView.backgroundView = nil;
+        [TPTheme setEmptyMessage:nil forTableView:self.tableView];
     }
 }
 
@@ -194,7 +193,6 @@
     self.exportItem.enabled = n > 0;
     UILabel *label = (UILabel *)self.countItem.customView;
     label.text = [NSString stringWithFormat:@"Đã chọn: %lu", (unsigned long)n];
-    [label sizeToFit];
     self.clearItem.enabled = n > 0;
 }
 
@@ -279,20 +277,21 @@
     UIImage *cached = [self.iconCache objectForKey:package.packageID];
     if (cached) return cached;
     UIImage *image = nil;
-    NSString *iconPath = [TPDpkg iconPathForPackage:package];
-    if (iconPath) {
-        UIImage *raw = [UIImage imageWithContentsOfFile:iconPath];
-        if (raw) {
-            CGFloat side = 29.0;
-            UIGraphicsImageRenderer *renderer = [[UIGraphicsImageRenderer alloc] initWithSize:CGSizeMake(side, side)];
-            image = [renderer imageWithActions:^(UIGraphicsImageRendererContext *context) {
-                [raw drawInRect:CGRectMake(0, 0, side, side)];
-            }];
+    @try {
+        NSString *iconPath = [TPDpkg iconPathForPackage:package];
+        UIImage *raw = iconPath ? [UIImage imageWithContentsOfFile:iconPath] : nil;
+        if (raw && raw.size.width > 0 && raw.size.height > 0) {
+            UIGraphicsBeginImageContextWithOptions(CGSizeMake(29, 29), NO, 0.0);
+            [raw drawInRect:CGRectMake(0, 0, 29, 29)];
+            image = UIGraphicsGetImageFromCurrentImageContext();
+            UIGraphicsEndImageContext();
         }
+    } @catch (NSException *exception) {
+        TPLog(@"Loi tai icon cua %@: %@", package.packageID, exception.reason);
+        image = nil;
     }
     if (!image) {
         image = [[UIImage systemImageNamed:@"puzzlepiece.extension.fill"] imageWithRenderingMode:UIImageRenderingModeAlwaysTemplate];
-        // Ảnh mẫu dùng chung, tô màu tại cell bằng tintColor của imageView là đủ — trả về ảnh hệ thống.
     }
     if (image) [self.iconCache setObject:image forKey:package.packageID];
     return image;
@@ -382,10 +381,16 @@
             UIActivityViewController *shareVC = [[UIActivityViewController alloc] initWithActivityItems:urls applicationActivities:nil];
             shareVC.popoverPresentationController.sourceView = self.view;
             shareVC.popoverPresentationController.sourceRect = CGRectMake(self.view.bounds.size.width / 2.0, self.view.bounds.size.height / 2.0, 1, 1);
-            [self presentViewController:shareVC animated:YES completion:nil];
+            TPPresentDelayed(self, shareVC);
         }];
         [alert addAction:share];
         alert.preferredAction = share;
+        [alert addAction:[UIAlertAction actionWithTitle:@"Mở thư mục" style:UIAlertActionStyleDefault handler:^(UIAlertAction *action) {
+            NSString *sessionDir = [[TPBackupManager backupRoot] stringByAppendingPathComponent:sessionName];
+            dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(0.35 * NSEC_PER_SEC)), dispatch_get_main_queue(), ^{
+                [TPOpenFolder presentFromViewController:self path:sessionDir anchorView:nil];
+            });
+        }]];
     }
     [alert addAction:[UIAlertAction actionWithTitle:@"OK" style:UIAlertActionStyleDefault handler:nil]];
     [self presentViewController:alert animated:YES completion:nil];
@@ -417,7 +422,7 @@
     UIActivityViewController *share = [[UIActivityViewController alloc] initWithActivityItems:@[[NSURL fileURLWithPath:path]] applicationActivities:nil];
     share.popoverPresentationController.sourceView = self.view;
     share.popoverPresentationController.sourceRect = CGRectMake(self.view.bounds.size.width / 2.0, self.view.bounds.size.height / 2.0, 1, 1);
-    [self presentViewController:share animated:YES completion:nil];
+    TPPresentDelayed(self, share);
 }
 
 @end

@@ -37,6 +37,13 @@
 + (NSString *)prefsFilePathForDomain:(NSString *)domain;
 // Các domain prefs có thể có của gói: package ID + mọi giá trị "defaults" đọc được trong Root.plist của PreferenceBundle thuộc gói.
 + (NSArray<NSString *> *)prefsDomainsForPackage:(TPPackage *)package;
+// Mọi thư mục Preferences cần dò: /var/mobile/Library/Preferences + <jbroot>/Library/Preferences.
++ (NSArray<NSString *> *)preferencesDirectories;
+// Dò file prefs THẬT của gói theo 3 lớp: (1) domain ứng viên x mọi thư mục Preferences;
+// (2) quét tên file gần giống trong các thư mục Preferences (domain lạ kiểu liquidglz1);
+// (3) thư mục riêng của tweak trong Library (vd Library/LiquidGlaze/prefs.plist).
+// Trả về [{label, source}] — source là đường dẫn gốc tuyệt đối, restore sẽ trả file về đúng đó. Có ghi log từng file tìm thấy.
++ (NSArray<NSDictionary<NSString *, NSString *> *> *)prefsFilesForPackage:(TPPackage *)package;
 // Đường dẫn file icon của gói (PreferenceLoader / bundle / app), nil nếu không có. Có cache theo package ID.
 + (NSString *)iconPathForPackage:(TPPackage *)package;
 

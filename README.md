@@ -1,8 +1,18 @@
-# TweakPacker 1.1.0
+# TweakPacker 1.1.1
 
 **Backup và khôi phục tweak đã cài — đóng trọn bộ .deb kèm luôn thông số, restore ngay trên máy.**
 
 Chào mọi người, mình là Quoc. TweakPacker là app mình viết cho chính mình trước, vì mình vọc tweak gần như mỗi ngày và gặp đi gặp lại mấy chuyện rất khó chịu: cài thử một tweak, chỉnh thông số tới lui cả buổi mới ưng, hôm sau gỡ ra thử cái khác, tới lúc muốn quay lại thì phải cài lại từ đầu rồi chỉnh lại từ đầu. Có tweak thì repo đóng cửa mất tiêu, file .deb ngày xưa không còn chỗ nào tải lại nữa. IAmLazy trên thị trường cũng làm được chuyện đóng gói lại, nhưng mình muốn một bản của riêng mình: chọn được từng tweak, backup luôn cả thông số đã chỉnh, và quan trọng nhất là khôi phục lại được ngay trong app chứ không phải lọ mọ chép file bằng Filza. Thế là có TweakPacker.
+
+## Có gì mới ở 1.1.1
+
+Bản này là bản vá lỗi theo đúng những gì mình gặp khi dùng 1.1.0 trên máy thật:
+
+- **Hết văng app ở cụm nút "Chọn hết" và nút 3 chấm** — nút 3 chấm giờ mở bảng chọn bình thường, không còn dùng menu kiểu mới hay lỗi nữa. App cũng gắn sẵn bộ ghi lỗi: nếu còn chỗ nào văng, file log sẽ ghi rõ văng ở đâu để mình sửa tiếp, không phải đoán mò.
+- **Chia sẻ và "Lưu vào Tệp" hết văng** — bảng chia sẻ giờ được mở sau khi hộp thoại trước đóng hẳn, đúng thứ tự iOS muốn.
+- **Tìm prefs kỹ hơn hẳn:** bản trước chỉ tìm file thông số ở một chỗ nên nhiều tweak bị báo thiếu prefs. Giờ app dò cả thư mục Preferences của máy lẫn của jbroot, quét cả tên file gần giống (có tweak đặt domain khác hẳn package ID) và cả thư mục riêng của tweak trong Library. Mỗi file tìm thấy đều ghi rõ đường dẫn gốc, restore là trả về đúng chỗ đó.
+- **Mở được đường dẫn nơi lưu:** backup xong có nút "Mở thư mục" ngay trong hộp kết quả; trong Kho backup và trong từng bản backup cũng có chỗ mở thẳng thư mục chứa file — mở bằng Filza, bằng Files, hoặc sao chép đường dẫn.
+- **Nền ứng dụng tuỳ biến:** thêm tab Cài đặt với 7 kiểu nền — theo hệ thống, đen tuyền, ngọc lục bảo, xanh dương, tím, cam, hồng — hoặc lấy hẳn một ảnh trong thư viện của bạn làm nền. Màu nhấn của app cũng đổi theo cho đồng bộ.
 
 ## Nó làm được gì
 
@@ -21,7 +31,7 @@ Chào mọi người, mình là Quoc. TweakPacker là app mình viết cho chín
 ## Vài lưu ý thật lòng
 
 - Restore tại máy chép file trực tiếp nên **không chạy script cài đặt (postinst...)** của gói. Phần lớn tweak không cần script vẫn chạy bình thường; tweak nào phụ thuộc script thì app đã cảnh báo trước, cứ đi đường Sileo là chắc ăn nhất.
-- File prefs được tìm theo domain của tweak (thường trùng package ID, app cũng đọc thêm cấu hình trong PreferenceBundle để tìm cho đúng). Tweak nào giấu thông số ở chỗ lạ thì bản ghi sẽ ghi rõ "không tìm thấy prefs" chứ không im lặng.
+- File prefs được dò theo 3 lớp: domain của tweak (thường trùng package ID, cộng thêm cấu hình đọc từ PreferenceBundle) trong cả hai thư mục Preferences (của máy và của jbroot); quét tên file gần giống cho các tweak đặt domain lạ; và thư mục riêng của tweak trong Library. Tweak nào giấu thông số ở chỗ lạ hơn nữa thì bản ghi sẽ ghi rõ "không tìm thấy prefs" chứ không im lặng, và file log liệt kê mọi đường app đã kiểm để còn biết mà sửa.
 - Trước khi ghi vào cơ sở dữ liệu gói, app luôn sao lưu file dpkg status vào thư mục `dpkg-snapshots` trong thư mục TweakPacker, có chuyện gì còn đường lui.
 - File backup nằm ở `Documents/TweakPacker` trên máy, mở Filza lên là thấy, chép ra ngoài thoải mái.
 

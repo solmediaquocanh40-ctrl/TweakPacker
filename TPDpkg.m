@@ -199,6 +199,93 @@
     return [domains copy];
 }
 
+#pragma mark - Dò file prefs (3 lớp)
+
++ (NSArray<NSString *> *)preferencesDirectories {
+    NSMutableArray<NSString *> *dirs = [NSMutableArray arrayWithObject:@"/var/mobile/Library/Preferences"];
+    NSString *jb = [[self jbPrefix] stringByAppendingString:@"/Library/Preferences"];
+    if (![dirs containsObject:jb]) [dirs addObject:jb];
+    return [dirs copy];
+}
+
+static NSUInteger TPLongestCommonPrefixLength(NSString *a, NSString *b) {
+    NSUInteger n = MIN(a.length, b.length);
+    NSUInteger i = 0;
+    while (i < n && [a characterAtIndex:i] == [b characterAtIndex:i]) i++;
+    return i;
+}
+
++ (NSArray<NSDictionary<NSString *, NSString *> *> *)prefsFilesForPackage:(TPPackage *)package {
+    NSFileManager *fm = [NSFileManager defaultManager];
+    NSMutableArray<NSDictionary<NSString *, NSString *> *> *results = [NSMutableArray array];
+    NSMutableSet<NSString *> *seen = [NSMutableSet set];
+    void (^addFile)(NSString *, NSString *) = ^(NSString *label, NSString *path) {
+        if (path.length == 0 || [seen containsObject:path]) return;
+        if (![TPDpkg pathExistsAt:path]) return;
+        [seen addObject:path];
+        [results addObject:@{ @"label": label ?: @"", @"source": path }];
+        TPLog(@"Prefs: tim thay [%@] -> %@", label, path);
+    };
+
+    // Lớp 1: domain ứng viên (package ID + defaults trong Root.plist + bundle id của PreferenceBundle).
+    NSMutableArray<NSString *> *domains = [[self prefsDomainsForPackage:package] mutableCopy];
+    for (NSString *listed in package.listedPaths) {
+        NSString *lower = listed.lowercaseString;
+        if (![lower containsString:@"preferencebundles/"] || ![lower hasSuffix:@"info.plist"]) continue;
+        NSString *real = [self realPathForListedPath:listed];
+        if (!real) continue;
+        NSDictionary *info = [NSDictionary dictionaryWithContentsOfFile:real];
+        NSString *bundleID = info[@"CFBundleIdentifier"];
+        if ([bundleID isKindOfClass:[NSString class]] && bundleID.length > 0 && ![domains containsObject:bundleID]) {
+            [domains addObject:bundleID];
+        }
+    }
+    NSArray<NSString *> *dirs = [self preferencesDirectories];
+    for (NSString *domain in domains) {
+        for (NSString *dir in dirs) {
+            addFile(domain, [dir stringByAppendingPathComponent:[domain stringByAppendingString:@".plist"]]);
+        }
+    }
+
+    // Lớp 2: quét tên gần giống (domain không trùng package ID vẫn bắt được).
+    NSString *pidLower = package.packageID.lowercaseString;
+    NSString *lastComp = pidLower.lastPathComponent;
+    for (NSString *dir in dirs) {
+        for (NSString *file in [fm contentsOfDirectoryAtPath:dir error:nil] ?: @[]) {
+            if (![file.lowercaseString hasSuffix:@".plist"]) continue;
+            NSString *base = file.stringByDeletingPathExtension.lowercaseString;
+            BOOL nameHit = (lastComp.length >= 4 && [base containsString:lastComp]);
+            BOOL prefixHit = TPLongestCommonPrefixLength(base, pidLower) >= 12;
+            if ([base isEqualToString:pidLower] || nameHit || prefixHit) {
+                addFile(base, [dir stringByAppendingPathComponent:file]);
+            }
+        }
+    }
+
+    // Lớp 3: thư mục riêng của tweak trong Library (vd /var/jb/Library/LiquidGlaze/).
+    if (lastComp.length >= 4) {
+        NSArray<NSString *> *libraryRoots = @[[[self jbPrefix] stringByAppendingString:@"/Library"], @"/var/mobile/Library"];
+        for (NSString *root in libraryRoots) {
+            for (NSString *folder in [fm contentsOfDirectoryAtPath:root error:nil] ?: @[]) {
+                if (![folder.lowercaseString containsString:lastComp]) continue;
+                NSString *folderPath = [root stringByAppendingPathComponent:folder];
+                BOOL isDir = NO;
+                if (![fm fileExistsAtPath:folderPath isDirectory:&isDir] || !isDir) continue;
+                NSUInteger added = 0;
+                for (NSString *file in [fm contentsOfDirectoryAtPath:folderPath error:nil] ?: @[]) {
+                    if (![file.lowercaseString hasSuffix:@".plist"]) continue;
+                    if (added >= 5) break;
+                    addFile([NSString stringWithFormat:@"%@/%@", folder, file], [folderPath stringByAppendingPathComponent:file]);
+                    added++;
+                }
+            }
+        }
+    }
+
+    TPLog(@"Prefs: %@ — tong cong %lu file", package.packageID, (unsigned long)results.count);
+    return [results copy];
+}
+
 #pragma mark - Icon
 
 + (NSString *)iconPathForPackage:(TPPackage *)package {

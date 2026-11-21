@@ -13,7 +13,8 @@
 @property (nonatomic, copy) NSString *author;
 @property (nonatomic, copy) NSString *debPath;
 @property (nonatomic, assign) unsigned long long debSize;
-// Các file prefs đã backup theo: [{domain, file}] — file nằm cùng thư mục với .deb.
+// Các file prefs đã backup theo: [{label, file, source}] — file nằm cùng thư mục với .deb,
+// source là đường dẫn gốc tuyệt đối để restore trả về đúng chỗ (manifest 1.1.0 cũ dùng khoá "domain").
 @property (nonatomic, copy) NSArray<NSDictionary<NSString *, NSString *> *> *prefsBackups;
 // Danh sách file trong .deb: [{path, size, type}] — path dạng debPath.
 @property (nonatomic, copy) NSArray<NSDictionary *> *fileList;

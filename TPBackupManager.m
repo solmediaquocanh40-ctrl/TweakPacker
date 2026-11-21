@@ -34,6 +34,7 @@
 + (TPBackupItem *)legacyItemForDebAtPath:(NSString *)debPath;
 + (NSString *)historyFilePath;
 + (NSDateFormatter *)sessionNameFormatter;
++ (void)recordHistoryActionLocked:(NSString *)action packageID:(NSString *)packageID ok:(BOOL)ok detail:(NSString *)detail;
 @end
 
 @implementation TPBackupManager
@@ -87,23 +88,26 @@
 
     if (progress) progress(@"Đang backup thông số (prefs)…", 0.55f);
     NSMutableArray<NSDictionary<NSString *, NSString *> *> *prefsBackups = [NSMutableArray array];
-    for (NSString *domain in [TPDpkg prefsDomainsForPackage:package]) {
-        NSString *src = [TPDpkg prefsFilePathForDomain:domain];
-        if (![TPDpkg pathExistsAt:src]) continue;
-        NSString *fileName = [NSString stringWithFormat:@"%@.prefs.%@.plist", package.packageID, domain];
+    for (NSDictionary<NSString *, NSString *> *found in [TPDpkg prefsFilesForPackage:package]) {
+        NSString *label = found[@"label"] ?: @"";
+        NSString *src = found[@"source"] ?: @"";
+        if (src.length == 0) continue;
+        NSString *safeLabel = [[label componentsSeparatedByCharactersInSet:[NSCharacterSet characterSetWithCharactersInString:@"/:"]] componentsJoinedByString:@"_"];
+        if (safeLabel.length == 0) safeLabel = @"prefs";
+        NSString *fileName = [NSString stringWithFormat:@"%@.prefs.%@.plist", package.packageID, safeLabel];
         NSString *dest = [sessionDirectory stringByAppendingPathComponent:fileName];
         NSUInteger n = 1;
         while ([TPDpkg pathExistsAt:dest]) {
             n++;
-            fileName = [NSString stringWithFormat:@"%@.prefs.%@-%lu.plist", package.packageID, domain, (unsigned long)n];
+            fileName = [NSString stringWithFormat:@"%@.prefs.%@-%lu.plist", package.packageID, safeLabel, (unsigned long)n];
             dest = [sessionDirectory stringByAppendingPathComponent:fileName];
         }
         NSError *copyError = nil;
         if ([fm copyItemAtPath:src toPath:dest error:&copyError]) {
-            [prefsBackups addObject:@{ @"domain": domain, @"file": fileName }];
-            TPLog(@"Da backup prefs %@ -> %@", domain, fileName);
+            [prefsBackups addObject:@{ @"label": label, @"file": fileName, @"source": src }];
+            TPLog(@"Da backup prefs %@ -> %@", src, fileName);
         } else {
-            TPLog(@"Khong chep duoc prefs %@: %@", domain, copyError.localizedDescription);
+            TPLog(@"Khong chep duoc prefs %@: %@", src, copyError.localizedDescription);
         }
     }
 
@@ -324,6 +328,12 @@
 }
 
 + (void)recordHistoryAction:(NSString *)action packageID:(NSString *)packageID ok:(BOOL)ok detail:(NSString *)detail {
+    @synchronized (self) {
+        [self recordHistoryActionLocked:action packageID:packageID ok:ok detail:detail];
+    }
+}
+
++ (void)recordHistoryActionLocked:(NSString *)action packageID:(NSString *)packageID ok:(BOOL)ok detail:(NSString *)detail {
     NSString *path = [self historyFilePath];
     NSMutableArray *entries = [NSMutableArray array];
     NSData *existing = [NSData dataWithContentsOfFile:path];
@@ -348,7 +358,11 @@
     if (!data) return @[];
     id parsed = [NSJSONSerialization JSONObjectWithData:data options:0 error:nil];
     if (![parsed isKindOfClass:[NSArray class]]) return @[];
-    return [[(NSArray *)parsed reverseObjectEnumerator] allObjects];
+    NSMutableArray<NSDictionary *> *clean = [NSMutableArray array];
+    for (id entry in (NSArray *)parsed) {
+        if ([entry isKindOfClass:[NSDictionary class]]) [clean addObject:entry];
+    }
+    return [[clean reverseObjectEnumerator] allObjects];
 }
 
 #pragma mark - So sánh

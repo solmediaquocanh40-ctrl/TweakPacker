@@ -1,6 +1,7 @@
 #import "TPBackupListViewController.h"
 #import "TPBackupManager.h"
 #import "TPBackupItemViewController.h"
+#import "TPTheme.h"
 #import "TPFormat.h"
 
 @interface TPBackupListViewController ()
@@ -8,6 +9,7 @@
 @property (nonatomic, copy) NSArray<TPBackupItem *> *allItems;
 - (void)reload;
 - (NSString *)headerTitleForSection:(NSInteger)section;
+- (void)openBackupFolder;
 @end
 
 @implementation TPBackupListViewController
@@ -23,45 +25,47 @@
 
 - (void)viewDidLoad {
     [super viewDidLoad];
+    self.navigationItem.rightBarButtonItem = [[UIBarButtonItem alloc] initWithImage:[UIImage systemImageNamed:@"folder"] style:UIBarButtonItemStylePlain target:self action:@selector(openBackupFolder)];
     [self reload];
 }
 
 - (void)viewWillAppear:(BOOL)animated {
     [super viewWillAppear:animated];
+    [TPTheme applyToTableView:self.tableView];
     [self reload];
+}
+
+- (void)openBackupFolder {
+    [TPOpenFolder presentFromViewController:self path:[TPBackupManager backupRoot] anchorView:nil];
 }
 
 - (void)reload {
     NSArray<TPBackupItem *> *items = [TPBackupManager allItems];
     self.allItems = items;
-    NSMutableArray<NSArray<TPBackupItem *> *> *sections = [NSMutableArray array];
-    NSMutableArray<TPBackupItem *> *current = nil;
-    NSString *currentKey = nil;
+    // Gom theo khoá đợt, giữ thứ tự xuất hiện đầu tiên (không phụ thuộc các bản cùng đợt có kề nhau hay không).
+    NSMutableArray<NSString *> *order = [NSMutableArray array];
+    NSMutableDictionary<NSString *, NSMutableArray<TPBackupItem *> *> *groups = [NSMutableDictionary dictionary];
     for (TPBackupItem *item in items) {
         NSString *key = item.legacy ? @"__legacy__" : item.sessionName;
-        if (current == nil || ![key isEqualToString:currentKey]) {
-            current = [NSMutableArray array];
-            currentKey = key;
-            [sections addObject:current];
+        NSMutableArray<TPBackupItem *> *group = groups[key];
+        if (!group) {
+            group = [NSMutableArray array];
+            groups[key] = group;
+            [order addObject:key];
         }
-        [current addObject:item];
+        [group addObject:item];
     }
     NSMutableArray<NSArray<TPBackupItem *> *> *frozen = [NSMutableArray array];
-    for (NSMutableArray<TPBackupItem *> *section in sections) {
-        [frozen addObject:[section copy]];
+    for (NSString *key in order) {
+        [frozen addObject:[groups[key] copy]];
     }
     self.sections = [frozen copy];
 
     if (items.count == 0) {
-        UILabel *label = [[UILabel alloc] init];
-        label.text = @"Chưa có bản backup nào.\nSang tab Đã cài, chọn tweak rồi bấm Backup.";
-        label.numberOfLines = 0;
-        label.textAlignment = NSTextAlignmentCenter;
-        label.textColor = [UIColor secondaryLabelColor];
-        self.tableView.backgroundView = label;
+        [TPTheme setEmptyMessage:@"Chưa có bản backup nào.\nSang tab Đã cài, chọn tweak rồi bấm Backup." forTableView:self.tableView];
         self.tableView.tableHeaderView = nil;
     } else {
-        self.tableView.backgroundView = nil;
+        [TPTheme setEmptyMessage:nil forTableView:self.tableView];
         UILabel *summary = [[UILabel alloc] initWithFrame:CGRectMake(0, 0, self.view.bounds.size.width, 40)];
         summary.text = [NSString stringWithFormat:@"Tổng cộng: %lu bản backup • %@", (unsigned long)items.count, TPSizeString([TPBackupManager totalSizeOfItems:items])];
         summary.textAlignment = NSTextAlignmentCenter;

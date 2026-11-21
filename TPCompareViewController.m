@@ -1,5 +1,6 @@
 #import "TPCompareViewController.h"
 #import "TPBackupManager.h"
+#import "TPTheme.h"
 #import "TPFormat.h"
 
 @interface TPCompareViewController ()
@@ -25,6 +26,11 @@
         _changed = diff[@"changed"] ?: @[];
     }
     return self;
+}
+
+- (void)viewWillAppear:(BOOL)animated {
+    [super viewWillAppear:animated];
+    [TPTheme applyToTableView:self.tableView];
 }
 
 // section 0 = tổng quan; 1 = chỉ có ở B; 2 = chỉ có ở A; 3 = khác kích thước. Mục rỗng thì ẩn.

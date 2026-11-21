@@ -3,12 +3,13 @@
 #import "TPBackupManager.h"
 #import "TPFileListViewController.h"
 #import "TPProgressHUD.h"
+#import "TPTheme.h"
 #import "TPFormat.h"
 #import "TPLog.h"
 
 @interface TPDetailViewController ()
 @property (nonatomic, strong) TPPackage *package;
-@property (nonatomic, copy) NSArray<NSString *> *existingPrefsDomains;
+@property (nonatomic, copy) NSArray<NSDictionary<NSString *, NSString *> *> *foundPrefs;
 - (NSArray<NSArray<NSString *> *> *)infoRows;
 - (void)backupThisPackage;
 - (void)showFileList;
@@ -22,22 +23,28 @@
     if (self) {
         _package = package;
         self.title = package.displayName;
-        NSMutableArray<NSString *> *existing = [NSMutableArray array];
-        for (NSString *domain in [TPDpkg prefsDomainsForPackage:package]) {
-            if ([TPDpkg pathExistsAt:[TPDpkg prefsFilePathForDomain:domain]]) {
-                [existing addObject:domain];
-            }
-        }
-        _existingPrefsDomains = [existing copy];
+        _foundPrefs = [TPDpkg prefsFilesForPackage:package];
     }
     return self;
 }
 
+- (void)viewWillAppear:(BOOL)animated {
+    [super viewWillAppear:animated];
+    [TPTheme applyToTableView:self.tableView];
+}
+
 - (NSArray<NSArray<NSString *> *> *)infoRows {
     TPPackage *pkg = self.package;
-    NSString *prefsText = self.existingPrefsDomains.count > 0
-        ? [NSString stringWithFormat:@"Có — %@", [self.existingPrefsDomains componentsJoinedByString:@", "]]
-        : @"Không thấy file prefs";
+    NSString *prefsText;
+    if (self.foundPrefs.count > 0) {
+        NSMutableArray<NSString *> *names = [NSMutableArray array];
+        for (NSDictionary<NSString *, NSString *> *found in self.foundPrefs) {
+            [names addObject:(found[@"source"] ?: @"").lastPathComponent];
+        }
+        prefsText = [NSString stringWithFormat:@"Có (%lu): %@", (unsigned long)self.foundPrefs.count, [names componentsJoinedByString:@", "]];
+    } else {
+        prefsText = @"Không thấy file prefs (đã dò thư mục Preferences của máy + jbroot + thư mục riêng của tweak — xem log để biết các đường đã kiểm)";
+    }
     return @[
         @[@"Tên", pkg.displayName ?: @""],
         @[@"Package", pkg.packageID ?: @""],
@@ -173,7 +180,7 @@
     UIActivityViewController *share = [[UIActivityViewController alloc] initWithActivityItems:urls applicationActivities:nil];
     share.popoverPresentationController.sourceView = self.view;
     share.popoverPresentationController.sourceRect = CGRectMake(self.view.bounds.size.width / 2.0, self.view.bounds.size.height / 2.0, 1, 1);
-    [self presentViewController:share animated:YES completion:nil];
+    TPPresentDelayed(self, share);
 }
 
 @end

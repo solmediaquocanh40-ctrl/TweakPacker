@@ -168,8 +168,11 @@ static NSString *TPDestinationForDebPath(NSString *debPath) {
     }
     if (item.hasPrefs) {
         for (NSDictionary<NSString *, NSString *> *prefs in item.prefsBackups) {
-            NSString *domain = prefs[@"domain"];
-            if (domain.length > 0 && [TPDpkg pathExistsAt:[TPDpkg prefsFilePathForDomain:domain]]) {
+            NSString *dest = prefs[@"source"];
+            if (dest.length == 0 && prefs[@"domain"].length > 0) {
+                dest = [TPDpkg prefsFilePathForDomain:prefs[@"domain"]];
+            }
+            if (dest.length > 0 && [TPDpkg pathExistsAt:dest]) {
                 [warnings addObject:@"Thông số hiện tại của tweak sẽ bị ghi đè bằng thông số trong bản backup."];
                 break;
             }
@@ -363,18 +366,22 @@ static NSString *TPDestinationForDebPath(NSString *debPath) {
     NSString *sessionDir = [item sessionDirectory];
     NSUInteger done = 0;
     for (NSDictionary<NSString *, NSString *> *prefs in item.prefsBackups) {
-        NSString *domain = prefs[@"domain"];
         NSString *file = prefs[@"file"];
-        if (domain.length == 0 || file.length == 0) continue;
+        // Bản 1.1.1 trở đi ghi sẵn đường dẫn gốc (source); manifest 1.1.0 chỉ có domain thì suy ra đường mặc định.
+        NSString *dest = prefs[@"source"];
+        if (dest.length == 0 && prefs[@"domain"].length > 0) {
+            dest = [TPDpkg prefsFilePathForDomain:prefs[@"domain"]];
+        }
+        if (file.length == 0 || dest.length == 0) continue;
         NSString *src = [sessionDir stringByAppendingPathComponent:file];
-        NSString *dest = [TPDpkg prefsFilePathForDomain:domain];
+        [fm createDirectoryAtPath:dest.stringByDeletingLastPathComponent withIntermediateDirectories:YES attributes:nil error:nil];
         [fm removeItemAtPath:dest error:nil];
         NSError *copyError = nil;
         if ([fm copyItemAtPath:src toPath:dest error:&copyError]) {
             done++;
-            TPLog(@"Da khoi phuc prefs %@ tu ban backup", domain);
+            TPLog(@"Da khoi phuc prefs -> %@", dest);
         } else {
-            TPLog(@"Khong khoi phuc duoc prefs %@: %@", domain, copyError.localizedDescription);
+            TPLog(@"Khong khoi phuc duoc prefs -> %@: %@", dest, copyError.localizedDescription);
         }
     }
     if (done == 0) {

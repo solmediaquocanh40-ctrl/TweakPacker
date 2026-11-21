@@ -2,6 +2,8 @@
 #import "TPPackageListViewController.h"
 #import "TPBackupListViewController.h"
 #import "TPHistoryViewController.h"
+#import "TPSettingsViewController.h"
+#import "TPTheme.h"
 
 @implementation TPAppDelegate
 
@@ -18,9 +20,13 @@
     TPHistoryViewController *history = [[TPHistoryViewController alloc] init];
     UINavigationController *navHistory = [[UINavigationController alloc] initWithRootViewController:history];
 
+    TPSettingsViewController *settings = [[TPSettingsViewController alloc] init];
+    UINavigationController *navSettings = [[UINavigationController alloc] initWithRootViewController:settings];
+
     UITabBarController *tabs = [[UITabBarController alloc] init];
-    tabs.viewControllers = @[navPackages, navBackups, navHistory];
+    tabs.viewControllers = @[navPackages, navBackups, navHistory, navSettings];
     self.window.rootViewController = tabs;
+    [TPTheme applyTintToWindow:self.window];
     [self.window makeKeyAndVisible];
     return YES;
 }

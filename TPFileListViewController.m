@@ -1,4 +1,5 @@
 #import "TPFileListViewController.h"
+#import "TPTheme.h"
 #import "TPFormat.h"
 
 @interface TPFileListViewController ()
@@ -14,6 +15,11 @@
         _entries = [entries copy];
     }
     return self;
+}
+
+- (void)viewWillAppear:(BOOL)animated {
+    [super viewWillAppear:animated];
+    [TPTheme applyToTableView:self.tableView];
 }
 
 - (NSInteger)tableView:(UITableView *)tableView numberOfRowsInSection:(NSInteger)section {

@@ -5,6 +5,7 @@
 #import "TPFileListViewController.h"
 #import "TPCompareViewController.h"
 #import "TPProgressHUD.h"
+#import "TPTheme.h"
 #import "TPFormat.h"
 #import "TPLog.h"
 
@@ -35,6 +36,11 @@
     return self;
 }
 
+- (void)viewWillAppear:(BOOL)animated {
+    [super viewWillAppear:animated];
+    [TPTheme applyToTableView:self.tableView];
+}
+
 - (NSArray<NSArray<NSString *> *> *)infoRows {
     TPBackupItem *item = self.item;
     return @[
@@ -58,6 +64,7 @@
     if (self.item.hasPrefs) [rows addObject:@"Chỉ khôi phục thông số (prefs)"];
     [rows addObject:@"So sánh với bản backup khác"];
     [rows addObject:@"Chia sẻ .deb"];
+    [rows addObject:@"Mở thư mục chứa bản này"];
     [rows addObject:@"Xoá bản backup"];
     return [rows copy];
 }
@@ -117,6 +124,7 @@
     else if ([action hasPrefix:@"Chỉ khôi phục"]) [self restorePrefsFlow];
     else if ([action hasPrefix:@"So sánh"]) [self compareFlow];
     else if ([action hasPrefix:@"Chia sẻ"]) [self shareDeb];
+    else if ([action hasPrefix:@"Mở thư mục"]) [TPOpenFolder presentFromViewController:self path:[self.item sessionDirectory] anchorView:[tableView cellForRowAtIndexPath:indexPath]];
     else if ([action hasPrefix:@"Xoá"]) [self deleteFlow];
 }
 
@@ -148,7 +156,9 @@
     TPBackupItem *item = self.item;
     UIAlertController *sheet = [UIAlertController alertControllerWithTitle:[NSString stringWithFormat:@"Restore %@ %@", item.displayName, item.version] message:@"Restore ngay trên máy: app tự chép file + khôi phục prefs + ghi dpkg (không chạy script cài đặt của gói).\nĐưa sang Sileo: cài bằng Sileo như một gói bình thường, đầy đủ script và phụ thuộc." preferredStyle:UIAlertControllerStyleActionSheet];
     [sheet addAction:[UIAlertAction actionWithTitle:@"Restore ngay trên máy" style:UIAlertActionStyleDefault handler:^(UIAlertAction *action) {
-        [self restoreInAppFlow];
+        dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(0.35 * NSEC_PER_SEC)), dispatch_get_main_queue(), ^{
+            [self restoreInAppFlow];
+        });
     }]];
     [sheet addAction:[UIAlertAction actionWithTitle:@"Đưa sang Sileo" style:UIAlertActionStyleDefault handler:^(UIAlertAction *action) {
         [self restoreViaSileo];
@@ -164,7 +174,7 @@
     UIActivityViewController *share = [[UIActivityViewController alloc] initWithActivityItems:@[[NSURL fileURLWithPath:self.item.debPath]] applicationActivities:nil];
     share.popoverPresentationController.sourceView = self.view;
     share.popoverPresentationController.sourceRect = CGRectMake(self.view.bounds.size.width / 2.0, self.view.bounds.size.height / 2.0, 1, 1);
-    [self presentViewController:share animated:YES completion:nil];
+    TPPresentDelayed(self, share);
 }
 
 - (void)restoreInAppFlow {

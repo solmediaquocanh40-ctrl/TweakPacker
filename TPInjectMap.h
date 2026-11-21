@@ -1,5 +1,7 @@
 #import <Foundation/Foundation.h>
 
+NS_ASSUME_NONNULL_BEGIN
+
 // Một tweak đã chích (hoặc khai báo sẽ chích) vào đâu đó trong máy.
 @interface TPInjectedTweak : NSObject
 
@@ -41,3 +43,5 @@
 + (void)buildWithCompletion:(void (^)(TPInjectMap *map))completion;
 
 @end
+
+NS_ASSUME_NONNULL_END
